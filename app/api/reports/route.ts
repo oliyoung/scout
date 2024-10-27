@@ -9,7 +9,7 @@ const GET = async (request: Request) => {
         return new Response('User is not signed in.', { status: 401 })
     }
     const token = getToken()
-    console.log({ userId, token })
+
     return NextResponse.json([])
     // const reports = await prisma.report.findMany({
     //     where: { userId }

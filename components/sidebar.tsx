@@ -7,8 +7,11 @@ import { NavUser } from "@/components/nav-user"
 import Link from 'next/link'
 import { Search, Sparkles, Home, LucideIcon, ChevronDown, MoreHorizontal, ArrowUpRight, StarOff, Trash2, Plus } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Report } from "@prisma/client"
+import { Player, Report, Team } from "@prisma/client"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, } from "@/components/ui/dialog"
+import NewReport from "@/components/reports/form"
+import useSWR, { mutate } from "swr"
+import { fetcher } from "@/lib/utils"
 
 interface NavItem {
     title: string;
@@ -38,8 +41,12 @@ const navItems: NavItem[] = [
 ]
 
 const TeamSwitcher = () => {
-    const teams: any[] = []
+    const [teams, setTeams] = useState<Team[]>([]);
     const [activeTeam, setActiveTeam] = useState(teams[0])
+
+    useEffect(() => {
+        setTeams([])
+    }, [])
 
     if (!activeTeam) {
         return <></>
@@ -51,7 +58,7 @@ const TeamSwitcher = () => {
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <SidebarMenuButton className="w-fit px-1.5">
-                            <span className="truncate font-semibold">{activeTeam.name}</span>
+                            <span className="truncate font-semibold">{teams[0].name}</span>
                             <ChevronDown className="opacity-50" />
                         </SidebarMenuButton>
                     </DropdownMenuTrigger>
@@ -96,19 +103,15 @@ const Main = () =>
     </SidebarMenu>
 
 const Reports = () => {
-    const [reports, setReports] = useState<Report[]>([]);
     const { isMobile } = useSidebar()
-
-    useEffect(() => {
-        setReports([])
-    }, [])
+    const { data, isLoading } = useSWR("/api/reports", fetcher);
 
     return (
         <Dialog>
             <SidebarGroup className="group-data-[collapsible=icon]:hidden">
                 <SidebarGroupLabel>Reports</SidebarGroupLabel>
                 <SidebarMenu>
-                    {reports.map((report) => (
+                    {!isLoading && data.map((report: Report) => (
                         <SidebarMenuItem key={report.id}>
                             <SidebarMenuButton asChild>
                                 <a href={`/reports/${report.id}`} title={report.reportAt.toLocaleDateString()}>
@@ -164,10 +167,80 @@ const Reports = () => {
                 <DialogHeader>
                     <DialogTitle>Start Report</DialogTitle>
                     <DialogDescription>
+                        Quisque dapibus lorem sed pharetra viverra. Sed feugiat turpis nec est sagittis, in finibus tortor blandit. Sed facilisis nisi at iaculis rutrum.
                     </DialogDescription>
+                    <NewReport />
                 </DialogHeader>
             </DialogContent>
         </Dialog>
+    )
+}
+
+const Players = () => {
+    const [players, setPlayers] = useState<Player[]>([]);
+    const { isMobile } = useSidebar()
+
+    useEffect(() => {
+        setPlayers([])
+    }, [])
+
+    return (
+        <Dialog>
+            <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+                <SidebarGroupLabel>Players</SidebarGroupLabel>
+                <SidebarMenu>
+                    {players.map((player) => (
+                        <SidebarMenuItem key={player.id}>
+                            <SidebarMenuButton asChild>
+                                <a href={`/Players/${player.id}`} title={player.name ?? ''}>
+                                    <span>{player.name}</span>
+                                    <span>{player.teamId}</span>
+                                </a>
+                            </SidebarMenuButton>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <SidebarMenuAction showOnHover>
+                                        <MoreHorizontal />
+                                        <span className="sr-only">More</span>
+                                    </SidebarMenuAction>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent
+                                    className="w-56 rounded-lg"
+                                    side={isMobile ? "bottom" : "right"}
+                                    align={isMobile ? "end" : "start"}
+                                >
+                                    <DropdownMenuItem>
+                                        <StarOff className="text-muted-foreground" />
+                                        <span>Remove from Favorites</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem>
+                                        <ArrowUpRight className="text-muted-foreground" />
+                                        <span>Open in New Tab</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem>
+                                        <Trash2 className="text-muted-foreground" />
+                                        <span>Delete</span>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </SidebarMenuItem>
+                    ))}
+                    <SidebarMenuItem>
+                        <SidebarMenuButton className="text-sidebar-foreground/70">
+                            <MoreHorizontal />
+                            <Link href='/players'>More</Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+                <SidebarGroupAction>
+                    <DialogTrigger asChild>
+                        <Plus />
+                    </DialogTrigger>
+                </SidebarGroupAction>
+            </SidebarGroup>
+        </Dialog >
     )
 }
 
@@ -179,6 +252,8 @@ const LeftAppSidebar = () => {
         </SidebarHeader>
         <SidebarContent>
             <Reports />
+            <SidebarRail />
+            <Players />
         </SidebarContent>
         <SidebarRail />
     </Sidebar>
