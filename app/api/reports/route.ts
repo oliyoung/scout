@@ -1,12 +1,20 @@
 import prisma from "@/lib/prisma";
+import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
 const GET = async (request: Request) => {
-    const userId = Number(request.headers.get('x-user-id'))
-    const reports = await prisma.report.findMany({
-        where: { userId }
-    });
-    return NextResponse.json(reports)
+    const { userId, getToken } = await auth()
+
+    if (!userId) {
+        return new Response('User is not signed in.', { status: 401 })
+    }
+    const token = getToken()
+    console.log({ userId, token })
+    return NextResponse.json([])
+    // const reports = await prisma.report.findMany({
+    //     where: { userId }
+    // });
+    // return NextResponse.json([reports])
 }
 
 const POST = async (request: Request) => {
